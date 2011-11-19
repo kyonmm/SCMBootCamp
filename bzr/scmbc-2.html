@@ -1,0 +1,426 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Bazaar入門セッション - SCM Boot Camp #2 &mdash; Bazaarスタートアップガイド v0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Bazaarスタートアップガイド v0.0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="#">Bazaarスタートアップガイド v0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Bazaar入門セッション - SCM Boot Camp #2</a><ul>
+<li><a class="reference internal" href="#id1">基本用語のはなし</a><ul>
+<li><a class="reference internal" href="#id2">コミット</a></li>
+<li><a class="reference internal" href="#id3">リビジョン</a></li>
+<li><a class="reference internal" href="#id4">ブランチ</a></li>
+<li><a class="reference internal" href="#id5">作業コピー</a></li>
+<li><a class="reference internal" href="#id6">リポジトリ</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bzr">.bzrの中身について</a></li>
+<li><a class="reference internal" href="#id7">作業フロー</a><ul>
+<li><a class="reference internal" href="#id8">ステップ１：集中型で使ってみる</a></li>
+<li><a class="reference internal" href="#id9">ステップ２：分散型の導入</a></li>
+<li><a class="reference internal" href="#id10">メインラインについて</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id11">ブランチとコミット</a><ul>
+<li><a class="reference internal" href="#id12">コミットの粒度について</a></li>
+<li><a class="reference internal" href="#id13">コミットコメントについて</a></li>
+<li><a class="reference internal" href="#id14">ブランチの作法について</a><ul>
+<li><a class="reference internal" href="#id15">サーバのブランチ</a></li>
+<li><a class="reference internal" href="#id16">クライアントのブランチ</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#go-ahead-enjoy">GO AHEAD, Enjoy!</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/scmbc-2.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="bazaar-scm-boot-camp-2">
+<h1>Bazaar入門セッション - SCM Boot Camp #2<a class="headerlink" href="#bazaar-scm-boot-camp-2" title="Permalink to this headline">¶</a></h1>
+<p><strong>for SCM Boot Camp #2 (2011.11.19)</strong></p>
+<div class="section" id="id1">
+<h2>基本用語のはなし<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>Bazaar をはじめ、バージョン管理ソフトでは、名詞と、
+その名詞が指すものを作る操作の動詞が、同じ単語になっていることがよくあります。</p>
+<p>先に用語をしっかり理解しておくと、あとは文脈で動詞か名詞かを判断できるはずなので、
+混乱しないように丁寧に解説して行きます。</p>
+<div class="section" id="id2">
+<h3>コミット<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>ここにいる人だったら知ってますよね。
+自分がした変更をVCSに記録することを、 <strong>コミット</strong> (動詞)といいます。</p>
+</div>
+<div class="section" id="id3">
+<h3>リビジョン<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>１回のコミットで保存される情報をまとめたものです。１回コミットするたびに、新しいリビジョンがひとつ作られます。</p>
+<p>「チェンジセット」と呼ばれることもあります。また、「コミット」(名詞)をリビジョンの意味で使うこともあります。</p>
+<p>リビジョンに含まれる情報は、こんなかんじです。</p>
+<ul class="simple">
+<li>リビジョンのID</li>
+<li>どのファイルが、どのように変更されたか</li>
+<li>コミットしたユーザ</li>
+<li>コミットした日付</li>
+<li>コミットメッセージ</li>
+<li>親(ひとつ前)のリビジョン</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>親のリビジョンは、１つとは限りません。マージ後のコミットでは２つの親を持つリビジョンができますし、
+場合によっては３つ以上の親ができることもあります。</p>
+<p class="last">例えば、下の図だと、Cの親リビジョンはBですが、Dの親リビジョンはCとYの２つです。</p>
+</div>
+<p class="blockdiag">
+<img src="_images/blockdiag-6489c9c5cd7395df19ac37dc8a3ecee8c1d9241f.png" alt="None" width="658" height="190" />
+</p>
+</div>
+<div class="section" id="id4">
+<h3>ブランチ<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>リビジョンを積み重ねることで、開発が進んでいきます。この、一連のリビジョンの連なりが <strong>ブランチ</strong> (名詞)です。</p>
+<p>リビジョンの説明で出した図のように途中で分岐することはありますが、 <strong>最新のリビジョン(HEAD)はひとつのブランチに対して常にひとつです。</strong></p>
+<p>既存のブランチからコピーして新しいブランチを作成することもできます。
+コピーして作った新しいブランチには、自分だけの修正をどんどんコミットしていくことができます。
+あるブランチで行った変更を別のブランチに送ったり、逆に別のブランチでの変更を自分のブランチに取り込んだりすることができます。</p>
+<p>ブランチをコピーすること自体も「ブランチ」(動詞)といいます。ややこしいですね。
+ブランチは英語で枝の意味ですが、一連のリビジョンが一本の「枝」と、ブランチをコピーして
+元のブランチと新しいブランチで別々のコミットをしていくことは「枝分かれ」と言えます。</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Bazaarでは、ブランチはディレクトリとして見えています。例えばmasterというブランチの情報は、ファイルシステム上のmasterというフォルダに格納されています。
+そのブランチがいらなくなれば、ディレクトリごと消してしまえばＯＫです。</p>
+</div>
+</div>
+<div class="section" id="id5">
+<h3>作業コピー<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>実際にプログラミングなどの作業を行うワークスペースを、 <strong>作業コピー</strong> または <strong>作業ツリー</strong> といいます。</p>
+<p>普通にブランチを作ると、作業コピーも一緒にくっついてきますが、あえてブランチには作業コピーを持たせずに、別のフォルダに作業コピーを作ることもできます。
+これは、複数のブランチでひとつの作業コピーを使いまわすような使い方をするときに役立ちます。</p>
+<p class="blockdiag">
+<img src="_images/blockdiag-5d83553b06cd50e94d5581c08ba08b7101182ecb.png" alt="None" width="470" height="440" />
+</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">作業ツリー自体のことを「チェックアウト」(名詞)ということもあります。
+また、後で出てきますが、作業ツリーを作る動作のことを「チェックアウト」(動詞)と呼びます。</p>
+</div>
+</div>
+<div class="section" id="id6">
+<h3>リポジトリ<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p><strong>リポジトリ</strong> (名詞)とは、リビジョンの情報を格納したデータベースのことです。
+(「リビジョン」と「リポジトリ」は動詞になりません)</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p><strong>GitやMercurialのリポジトリは、それがそのままプロジェクトを表しますが、Bazaarのリポジトリは、本質的には単なる入れ物でしかなく、それ自体が何かを表すわけではありません。</strong></p>
+<p>その気になれば、MySQLのブランチとemacsのブランチを同じリポジトリに突っ込んだりとかも出来ます。普通はしませんがｗ</p>
+<p><strong>Bazaarにとって重要なのはブランチです。ほとんどの操作も、ブランチに対して実行されます。</strong></p>
+<p class="last">例えば、 <tt class="docutils literal"><span class="pre">bzr</span> <span class="pre">log</span></tt> はリポジトリに対して実行できますが、これも実際にはリポジトリ内のすべてのブランチを対象にしてログ表示処理を実行しているだけです。</p>
+</div>
+</div>
+</div>
+<div class="section" id="bzr">
+<h2>.bzrの中身について<a class="headerlink" href="#bzr" title="Permalink to this headline">¶</a></h2>
+<p>Bazaarの管理情報は、.bzrというフォルダの中に格納されます。この中のファイルについて、少しだけ見てみましょう。</p>
+<p class="blockdiag">
+<img src="_images/blockdiag-8aaaca8018c642b2433c164554080dcef3be2b79.png" alt="None" width="685" height="280" />
+</p>
+<p>.bzrの中には、主に３つのフォルダがあり、それぞれが、ブランチ／作業コピー／リポジトリの情報を格納しています。</p>
+<p><strong>必ず上の３つのフォルダがあるわけではありません。例えば、作業コピーをブランチとは別のところに作ることができるので、その場合はcheckoutフォルダだけになりますし、
+逆に作業コピーを持たないブランチの場合はbranchフォルダだけということもあります。</strong></p>
+</div>
+<div class="section" id="id7">
+<h2>作業フロー<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h2>
+<p><strong>Bazaarは運用の自由度がとても高いので、ここに上げる以外にもさまざまなパターンがありますが、
+まずは初めて使う方におすすめのパターンをご紹介します。</strong></p>
+<div class="section" id="id8">
+<h3>ステップ１：集中型で使ってみる<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<p>サーバのブランチをチェックアウトすると、クライアント上に作業コピーを作成して、SVNのような集中型で使うことができます。:</p>
+<div class="highlight-python"><pre># 作業コピーを取得
+&gt; bzr checkout http://url/to/remote/branch MY_CHECKOUT</pre>
+</div>
+<img alt="_images/checkout.png" src="_images/checkout.png" style="width: 400pt;" />
+<p>SVNのように、updateで手元の作業コピーを更新したり、commitでサーバに変更を送信することができます。:</p>
+<div class="highlight-python"><pre># 作業コピーを更新
+&gt; bzr update
+
+# 変更した内容をコミット
+&gt; bzr commit -m "ラスボスがチェーンソーで即死してしまう不具合を修正"</pre>
+</div>
+<img alt="_images/checkout2.png" src="_images/checkout2.png" style="width: 400pt;" />
+<p>履歴やDIFFは、オフラインでも参照することができます。</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">一時的にクライアント上だけでオフラインコミットをすることも出来ますが、そのコミットをサーバに送信するときの挙動にクセがあるので、初心者にはおすすめできません。</p>
+</div>
+</div>
+<div class="section" id="id9">
+<h3>ステップ２：分散型の導入<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<p>SVNを使う場合、updateのときにリモートの変更と作業コピー上で自分が行った変更がマージされますが、自分の変更はまだコミットされていない状態のため、コンフリクトが発生した
+場合など、ちょっとしたミスで変更内容を失ってしまう危険と隣り合わせです。</p>
+<p>Bazaarを集中型で使う場合でも、上に書いたようにオフラインで履歴やDIFFが見れたり、shelve/unshelveなどの便利な機能が増えたりなど、SVNにはないメリットがあるのですが、
+この <strong>「不安定なマージ」</strong> をしなければならないという欠点は解決できません。</p>
+<p><strong>そこで分散型の出番ですよ。</strong></p>
+<p>実は、ステップ１で作った作業コピーは、 update や commit のたびにリモートのブランチと同期されるブランチを持っています。
+(オフラインでも履歴や差分が確認できるのは、この同期されたブランチがあるからです。)
+これをコピーして、新しく別のブランチを作ることができます。:</p>
+<div class="highlight-python"><pre># MY_CHECKOUTのブランチをコピーして、NEW_BRANCHというブランチ(+作業コピー)を作る
+&gt; bzr branch MY_CHECKOUT NEW_BRANCH</pre>
+</div>
+<img alt="_images/checkout-and-branch.png" src="_images/checkout-and-branch.png" style="width: 400pt;" />
+<p class="blockdiag">
+<img src="_images/blockdiag-3948a1a439c97e1959afe8222388c8378d37cf78.png" alt="None" width="658" height="115" />
+</p>
+<p>この、新しく作ったブランチ(+作業コピー)は、他のブランチからは独立しているので、ここでは自分の都合で好きにコミットをすることができます。</p>
+<p>このブランチ上で開発を進めて、十分な完成度に達したらサーバにアップロードします。</p>
+<img alt="_images/checkout-and-branch2.png" src="_images/checkout-and-branch2.png" style="width: 400pt;" />
+<p>NEW_BRANCH上で、x、y、zの３つのコミットをしたとしましょう。これをサーバにアップします。</p>
+<p class="blockdiag">
+<img src="_images/blockdiag-8bffba62081427b1e8f6276a931975daa7bfb017.png" alt="None" width="658" height="115" />
+</p>
+<p><strong>まず、最初に作った作業コピーに移動して、サーバから最新のコードを取り込んでおきます。</strong></p>
+<div class="highlight-python"><pre># 最初の作業コピーに移動
+&gt; cd ../MY_CHECKOUT
+
+# マージの前に、サーバから最新のコードを取得しておく
+&gt; bzr update</pre>
+</div>
+<p>どうやら、他の人がリビジョンD、Eを追加していたようです。</p>
+<p class="blockdiag">
+<img src="_images/blockdiag-79c0ab1275e77078578cbccafa71a5396a7d5649.png" alt="None" width="559" height="115" />
+</p>
+<p><strong>さらに、mergeコマンドを使ってNEW_BRANCHでの修正を取り込みます。</strong></p>
+<div class="highlight-python"><pre># NEW_BRANCH上で行った変更を取り込む
+&gt; bzr merge ../NEW_BRANCH</pre>
+</div>
+<p class="blockdiag">
+<img src="_images/blockdiag-579f8f4869a05c2edba4d0874219b0a21a2ea379.png" alt="None" width="757" height="190" />
+</p>
+<p>これで、サーバ側の修正(他の人がした修正)と、自分がNEW_BRANCH上でした修正がマージされます。
+<em>Gitと違って、この時点ではまだコミットはされません。</em></p>
+<blockquote>
+<div><em>自動でマージできなかった場合は、SVNなどと同じようにコンフリクトが発生し、手動でマージしなければならなくなります。
+しかし、自分でした修正はNEW_BRANCH上できっちりコミット済みなので、 **「失敗したら元にもどせなくなるかも」みたいな心配はせずに安心して作業できます。*</em> *</div></blockquote>
+<p><strong>マージが終わったら、変更をコミットします。</strong></p>
+<div class="highlight-python"><pre>&gt; bzr commit -m "NEW_BRANCHでの修正(アイスソードを買えてしまう不具合の修正)を取り込んだ"</pre>
+</div>
+<p class="blockdiag">
+<img src="_images/blockdiag-c2200c0d4d448c09a3fb3093b3c11ccbae280ffb.png" alt="None" width="757" height="190" />
+</p>
+<p>ステップ１での話を思い出してください。
+<strong>ここでのコミットは、サーバへのコミットになる</strong> という話をしました。つまり、これでサーバへのアップロードは完了です。</p>
+<blockquote>
+<div><em>同じように、サーバ側の修正を、NEW_BRANCHにmergeで取り込むこともできます。(ただ、個人的には、そうするとブランチが濁る気がするので、そういう場合はできるだけ
+rebaseコマンドを使う方が好みです。その辺の話はまたそのうち。)</em></div></blockquote>
+</div>
+<div class="section" id="id10">
+<h3>メインラインについて<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<p>マージを行うことによって、上記のような、ブランチが途中で枝分かれして、最終的にまたひとつになる形のブランチができます。
+この、枝分かれした複数の経路の中で、 <strong>そのブランチにとってもっとも重要な経路を、メインライン</strong> と呼びます。</p>
+<p>各ブランチは、ひとつずつメインラインを持っています。</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">おおざっぱに説明すると、 <strong>そのブランチ上でコミットされたリビジョンのつながりがメインライン</strong> 、マージで他のブランチから取り込まれた経路はサブライン
+(という言葉はありませんが)ということになります。</p>
+</div>
+<p>上の例では、</p>
+<ul class="simple">
+<li>MY_CHECKOUTのメインラインは A -&gt; B -&gt; C -&gt; D -&gt; E -&gt; F</li>
+<li>NEW_BRANCHのメインラインは A-&gt; B -&gt; C -&gt; x -&gt; y -&gt; z</li>
+</ul>
+<p>です。</p>
+<p>これは単なる概念上の問題ではなく、GUIやCUIでログを参照するときにも、メインラインとそれ以外は明確に区別されています。</p>
+<ul>
+<li><p class="first">メインラインのログ</p>
+<a class="reference internal image-reference" href="_images/log-mainline.png"><img alt="_images/log-mainline.png" src="_images/log-mainline.png" /></a>
+</li>
+<li><p class="first">メインライン以外も含めた詳細なログ</p>
+<a class="reference internal image-reference" href="_images/log-detail.png"><img alt="_images/log-detail.png" src="_images/log-detail.png" /></a>
+</li>
+</ul>
+<p>Bazaarの標準的な運用では、各担当者のローカルなブランチ上でのコミットのやり方などはあまりうるさく言わない一方、
+<strong>中央リポジトリ上のブランチのメインラインをきれいに保つ</strong> ことについては、かなり強く意識します。</p>
+<ul class="simple">
+<li>すべてのリビジョンがちゃんと動作する。</li>
+<li>詳細な履歴を展開しなくても、メインラインだけを見れば、変更の意図や内容が把握できる。</li>
+</ul>
+<p>という状態になっていれば、「きれいなメインライン」だと考えていいと思います。このあたりは、次の章でもう少し説明します。</p>
+</div>
+</div>
+<div class="section" id="id11">
+<h2>ブランチとコミット<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id12">
+<h3>コミットの粒度について<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<p><strong># 参考文献 「Mercurial 入門セッション資料」&#64;troter先生</strong></p>
+<p>SVNなどの集中型VCSでは、コミットすると全員の開発者に影響するため、次のような運用を行っていることが多いと思います。</p>
+<ul class="simple">
+<li>コンパイルエラーやほかの開発者への影響が出ない程度に空気を読んでコミットする</li>
+<li>新しい機能を作成する場合は全部できてからコミットする</li>
+<li>1チケットの修正は1コミットにする</li>
+<li>あとで戻したい単位でコミットする</li>
+<li>一度に一つの変更をコミットする</li>
+</ul>
+<p>分散型で運用している場合は、コミットは自分の作業領域のブランチにのみ反映されるので、1コミットに詰め込む必要はありません。
+次の粒度でコミットし、任意のタイミングでサーバーにアップロードしましょう。</p>
+<ul class="simple">
+<li>あとで戻したい単位でコミットする</li>
+<li>一度に一つの変更をコミットする</li>
+</ul>
+<p>最初は「あとで戻したい単位でコミットする」を意識するとよいと思います。慣れてきたところで「一度に一つの変更をコミットする」に移行しましょう。</p>
+<p>「一度に一つの変更をコミットする」ためは具体的には次のようなことを意識しましょう。</p>
+<ul class="simple">
+<li>機能追加とバグフィックスを同時に行わない</li>
+<li>機能追加と直接関係ないインデント修正は行わない</li>
+<li>機能追加とリファクタリングを同時に行わない</li>
+<li>大きな機能追加を一度のコミットで行わない
+(「あとで戻したい単位でコミットする」と相反します)</li>
+</ul>
+<p>前向きに考えると次になります。</p>
+<ul class="simple">
+<li>機能追加だけのコミットをしましょう</li>
+<li>バグフィックスだけのコミットをしましょう</li>
+<li>インデント修正だけのコミットをしましょう</li>
+<li>リファクタリングだけのコミットをしましょう</li>
+<li>大きい機能追加の場合はいくつかのステップに分割してコミットしましょう
+(「あとで戻したい単位でコミットする」と相反します)</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Bazaarでは、マスターとなるブランチのメインラインの履歴にはこだわりますが、メインライン上に現れないサブの履歴の
+コミットについては比較的寛容です。</p>
+<p class="last">どれだけ細かい粒度でコミットしても、最後にメインのブランチにマージする時にはメインライン上の
+1コミットにまとめられるので、履歴がうるさくなることを気にする必要はありません。
+ファイルの add 漏れとか、ソースコードの typo とか、コミットコメントがわかりにくいなどの汚いコミットも、
+最後にメインのブランチにマージするまでに修正すれば最後には綺麗な1つのコミットになるので、失敗を恐れず
+どんどんコミットしましょう。</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Bazaarには <tt class="docutils literal"><span class="pre">uncommit</span></tt> というコマンドがあり、このコマンドでコミットを最新のものからいくつでも取り消すことができます。</p>
+<p><em>「メインラインでないとはいえ、汚いコミットをサーバに上げるのはオレの美学が許さねえ」</em> という人は、</p>
+<ul class="simple">
+<li>普段は、コンパイルやテストが通るとか通らないとかは気にせずバックアップ代わりに適当にコミットしておく</li>
+<li>きれいなコミットができる状態になったら、適当コミットを <tt class="docutils literal"><span class="pre">uncommit</span></tt> で取り消してコミットしなおす</li>
+</ul>
+<p class="last">というのもアリですね。</p>
+</div>
+</div>
+<div class="section" id="id13">
+<h3>コミットコメントについて<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<p>コミットコメントについては、あまりルールはありません。以下のような基準を念頭において、プロジェクトごとに使いやすいルールを決めてください。</p>
+<ul>
+<li><p class="first">禁則文字は特にありません。日本語の使用も自由です。</p>
+</li>
+<li><p class="first">複数行にわたるメッセージを書く場合は、１行目に概要(見出し)を書きます。</p>
+</li>
+<li><p class="first"><strong>マージ後のコミットには、ちゃんと変更した内容を書きます。</strong></p>
+<p><em>例えば、Mercurialだと、マージ後のコミットメッセージは「○○をマージ」とかにすることが多いようです。
+Bazaarの場合は、上に書いたように「メインラインだけを見れば変更の概要が分かる」ようにしておいた方が、何かと便利です。</em></p>
+</li>
+<li><p class="first">分散型の場合、コンパイルやテストが通らない状態での不良コミットも集中型の場合ほどタブー視されません(Bazaarの場合、マスターとなるブランチの
+メインラインが整っていればＯＫみたいなノリ)が、不良コミットは不良コミットと分かるようなコメントにしておいた方がいいでしょう。</p>
+</li>
+</ul>
+</div>
+<div class="section" id="id14">
+<h3>ブランチの作法について<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id15">
+<h4>サーバのブランチ<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h4>
+<p>マスターとなるサーバ上のブランチのレイアウトやライフサイクルをどうするべきかは、開発の形態(リリースの頻度はどれくらいか、複数バージョンを
+メンテナンスする必要があるかどうか、etc)によって変わってきます。</p>
+<p>Gitのセッションで紹介のあった「A successful Git branching model」などを参考に、自分たちの開発スタイルに適した構成を考えてみてください。</p>
+<p>今までSVNを使っていたのであれば、まずはSVNと同じような trunk / branches という構成で使い始めてみるのでも構わないと思います。</p>
+</div>
+<div class="section" id="id16">
+<h4>クライアントのブランチ<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h4>
+<p>Bazaarの場合、サーバのブランチ構成と、クライアント側でのブランチ構成は全く関係ないので、自分が使いやすいように自由にレイアウトして構いません。</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">DVCSとしてのメリットを最大限に活かすのであれば、開発する機能ごとにブランチを分けた方がいいでしょう(<strong>フィーチャブランチ</strong>)</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="go-ahead-enjoy">
+<h2>GO AHEAD, Enjoy!<a class="headerlink" href="#go-ahead-enjoy" title="Permalink to this headline">¶</a></h2>
+<p><strong>それでは、楽しんでいきましょう！</strong></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="#">Bazaarスタートアップガイド v0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Hidetaka IWATA.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
