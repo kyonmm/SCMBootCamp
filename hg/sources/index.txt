@@ -1,0 +1,1698 @@
+=================================================
+ Mercurial 入門セッション資料 - SCM Boot Camp #2
+=================================================
+
+この資料について
+----------------
+- SCMBC #2 Mercurial 入門セッション資料です。
+
+  - http://bitbucket.org/troter/scmbc-2011.11-mercurial-introsession
+
+- この資料ではMercurialを利用するに当たって必須の用語や概念について説明しています。
+- この後の演習で参考になるよう、効果的に利用する為のお作法、作業フローについても解説します。
+
+.. (おまけ)分散バージョン管理全般の利点
+.. ------------------------------------
+.. TODO 基調講演がここらへんのネタなのでおまけとして
+
+.. TODO Subversionその他集中型との差異について
+
+.. な ぜ M e r c u r i a l な の か ！
+.. -----------------------------------
+.. TODO 思いの丈をぶつけます
+
+リポジトリ
+-----------------------------------
+
+(狭義の)リポジトリ
+^^^^^^^^^^^^^^^^^^^^
+SCM ツールにおいて、
+作成／改変／移動／削除といったファイルに対する作業内容や、
+実施者／日付といった
+「履歴」 (history) に関する管理情報を格納しておく領域を、
+(狭義の)「リポジトリ」 (repository) と呼びます。
+
+作業領域
+^^^^^^^^^^^^^^^^^^^^
+リポジトリに格納されている情報を元に、
+ファイルを取り出したり、
+取り出したファイルに対する作成／改変／移動／削除といった作業を行う領域を、
+CVS や Subversion では
+「ワーキングコピー」 (working copy) 、
+『 `パターンによるソフトウェア構成管理`_ 』
+では「プライベートワークスペース」 (private workspace) などと呼びますが、
+Mercurial では「作業領域」 (working directory) と呼びます。
+
+.. _`パターンによるソフトウェア構成管理`: http://www.amazon.co.jp/dp/4798112593
+
+CVS や Subversion では、
+リポジトリからの「チェックアウト」 (checkout)
+によって作業領域が作成されます。
+
+  ::
+    
+     リポジトリ                        作業領域
+    |----------|    チェックアウト    |--------|
+    |          |   ---------------->  |        |
+    |          |                      |        |
+    |          |                      |        |
+    |----------|                      |--------|
+    
+    図 svn 時代の作業領域作成
+
+
+作業領域には、
+ごくわずかの管理情報
+(例: 各ディレクトリの CVS/ や .svn/)
+しか保存されないため、
+履歴情報の参照／変更が必要になった際には、
+基本的に常にチェックアウト元のリポジトリに対して
+(場合によってはネットワーク経由で)
+問い合わせが発生します。
+
+
+  ::
+    
+     リポジトリ                        作業領域
+    |----------|                      |--------|
+    |          |                      | xxx    | なにか作業する
+    |          |                      |        |
+    |          |                      |        |
+    |----------|                      |--------|
+    
+     リポジトリ                        作業領域
+    |----------|      履歴下さい      |--------|   svn log
+    |          |   <----------------  | xxx    | <----------
+    |          |                      |        |
+    |          |      履歴            |        |   履歴
+    |----------|   ---------------->  |--------| ---------->
+
+     リポジトリ                        作業領域
+    |----------|      作業内容        |--------|   svn commit
+    | xxx      |   <----------------  | xxx    | <----------
+    |          |                      |        |
+    |          |      結果            |        |   結果
+    |----------|   ---------------->  |--------| ----------->
+    
+    図 svn 時代の日常作業
+
+その一方 Mercurial の場合は、
+作業領域とリポジトリは一体化しており、
+この「作業領域と一体になったリポジトリ」も、
+広義の意味で「リポジトリ」と呼んでいます。
+
+CVS や Subversion では、
+たとえリポジトリが空であっても、
+「リポジトリ」を作って「作業領域」にチェックアウトする、
+という手順を踏む必要がありますが、
+Mercurial では (当面一人で新規の作業するのであれば)
+リポジトリの新規作成を行うコマンド ("hg init") を事項したなら、
+即座に作業領域として使用することができます。
+
+  ::
+    
+                           リポジトリ兼作業領域
+         hg init          |--------|
+       ---------------->  |        |
+         新規作成         |        |
+                          |        |
+                          |--------|
+    
+    図 svn 時代の作業領域作成
+
+「リポジトリ兼作業領域」は、
+以下のようなディレクトリ構成になっています。
+
+  ::
+
+    / リポジトリルート(兼 作業領域となるディレクトリ)
+    |
+    |-- .hg/ メタデータ格納ディレクトリ
+    | |
+    | |-- store/ リビジョンの格納されているディレクトリ
+    | |          絶対触るな！
+    | |
+    | |-- hgrc リポジトリ固有のMercurialの設定ファイル
+    | |        hg init で初期化した場合は作成されない為、手で作成する
+    | |        よく編集するファイル
+    | |
+    | |-- .... 他にもいろいろあるけど、用途を理解するまでは
+    |          基本的に「触るな！」
+    |
+    |-- 作業領域
+    
+    図 リポジトリの構成
+
+
+「(狭義の)リポジトリ」と「作業領域」が一体となっているため、
+「(狭義の)リポジトリへの履歴情報の問い合わせ」も、
+手元の(広義の)リポジトリの中で完結します。
+
+  ::
+    
+         リポジトリ兼作業領域
+        |--------|
+        | xxx    | なにか作業する
+        |        |
+        |        |
+        |--------|
+    
+         リポジトリ兼作業領域
+        |--------|   hg log
+        | xxx    | <---------
+        |        |
+        |        |   履歴
+        |--------| --------->
+    
+         リポジトリ兼作業領域
+        |--------|   hg commit
+        | xxx    | <------------
+        |        |
+        |        |   結果
+        |--------| ------------>
+    
+    図 分散時代の日常作業
+
+リポジトリ間での連携は、
+他のリポジトリ（＝ 他の作業／他の人／他の拠点等）
+における作業成果を、
+自身のリポジトリに取り込みたい場合や、
+自身の成果を他のリポジトリに反映したい場合にのみ、
+必要となります。
+
+他からの取り込みは "hg pull"、
+他への反映は "hg push" で行います。
+
+  ::
+    
+     リポジトリ                        リポジトリ(兼作業領域)
+    |----------|      変更要求        |--------|   hg pull
+    | yyy      |   <----------------  | xxx    | <----------
+    |          |                      |        |
+    |          |      変更履歴        | yyy    |   結果
+    |----------|   ---------------->  |--------| ---------->
+    
+    
+    |----------|      変更反映        |--------|   hg push
+    | xxx      |   <----------------  | xxx    | <----------
+    |          |                      |        |
+    | yyy      |       結果           |        |   結果
+    |----------|   ---------------->  |--------| ---------->
+    
+    図 分散時代のリポジトリ間の同期
+
+
+共同作業の成果を共有する場合、
+作業領域にファイルを取り出さない／作業しないようにして、
+「狭義のリポジトリ」のみで運用する、
+いわゆる「共有リポジトリ」を設置するのが一般的です。
+
+既に記録された誰かの成果を元に作業を開始する場合は、
+リポジトリの新規作成 ("hg init") ではなく、
+「共有リポジトリ」からの複製 ("hg clone") によって、
+自分用の(広義の)リポジトリを作成するのが一般的です。
+
+リビジョン
+-----------------------------------
+
+リビジョンとは
+^^^^^^^^^^^^^^^^^^^^
+構成管理における、変更履歴の記録単位。
+リビジョンの連なりによって、
+作業の履歴が形成されます。
+各リビジョン毎に以下の内容が記録されます。
+
+  - 自リビジョンの識別子
+  - 親リビジョンの識別子 (※ ぱっと見、見えない場合あり)
+  - 記録したユーザ名
+  - 記録した日付
+  - コメント
+  - その他の属性情報(ブランチ名など)
+  - ファイルに対する変更内容
+
+"hg log" 等のコマンドの実行により、以下のような形式で表示されます。
+
+  ::
+
+    チェンジセット:   1056:e7a0149a88f0
+    タグ:             1.0.0
+    ユーザ:           tk0miya <i.tkomiya@gmail.com>
+    日付:             Fri Nov 04 15:52:55 2011 +0900
+    要約:             * Update version
+
+CVS 以前の SCM ツールでは、
+ファイル毎にリビジョンの記録を管理していたため、
+「ファイルに対する変更内容」の管理がファイル毎にばらばらでした。
+
+しかし、Subversion からは、記録の管理単位が
+「(利用者にとって)意味を持つ、
+一連のファイルへの変更のまとまり」となったことで、
+これを「変更内容の集合」の意味から
+「チェンジセット」(changeset)と呼ぶようになりました。
+
+また、変更内容を履歴に記録する際のコマンド名が
+「コミット」 (commit) であることから、
+「リビジョン」「チェンジセット」「コミット」は多くの場合、
+同等の意味を持ちます。
+
+  .. note::
+
+    Mercurial コマンドのメッセージ翻訳では、
+    基本的に「リビジョン」に統一しています。
+    が、"hg log" の出力では、原文に倣って「チェンジセット」を使用しています
+    ... orz (by 藤原)
+
+
+以下の情報の記録は、リビジョンに対してではなく、
+管理ファイルに別途記録されます。
+
+  - タグ(後述)とリビジョンの対応関係
+
+
+リビジョンの指定方法
+^^^^^^^^^^^^^^^^^^^^
+Mercurialでは次の方法でリビジョンを一意に指定出来ます。
+
+  - 完全長ハッシュ値: リビジョン固有の40桁の16進数
+  - 短縮ハッシュ値: リビジョン固有の12桁の16進数
+  - リビジョン番号: リポジトリ内での通し番号
+
+「完全長」ないし「短縮」ハッシュ値は、
+「チェンジセットID」(changeset ID)とも呼ばれます。
+
+ハッシュ値による識別は、
+基本的にリポジトリをまたいでユニークですが、
+リビジョン番号は手元のリポジトリでのみ有効な番号ですので、
+全く同じリポジトリを操作している時以外に、
+他の人との会話で使用すると、
+混乱の元になりますから注意しましょう。
+
+  .. note::
+
+    完全長ハッシュ値は確実にユニーク。
+    短縮ハッシュ値は「まぁまぁ」ユニークな点に注意
+
+特定のリビジョンに対して、
+人が認識しやすい名前を付ける機能が「タグ」 (tag) 付け機能です。
+タグが付いているリビジョンに関しては、上記の3種類以外に、
+タグ名を使ってリビジョンを指定することも可能です。
+
+通常のタグ付けは、
+一旦設定したなら基本的には対象リビジョンに固定されますが、
+「一番最新」のリビジョンを指す "tip" というタグは、
+リビジョンが増える度に Mercurial が自動的に設定対象を更新します。
+
+一つのリビジョンではなく、リビジョンの集合を指定したい場合、
+旧来の簡易表記方式 ("hg help multirevs" 参照) と:
+
+  ::
+
+    # リビジョン番号 3 からリビジョン番号 10 までを表示
+    $ hg log -r 3:10
+
+集合の条件を簡単に記述する為の DSL (Domain Specific Language) である
+revsets (revision sets) 方式 ("hg help revsets" 参照)
+の2種類で指定可能です。
+
+  ::
+
+    # "指定したブランチの先祖を新しい順で、ただしマージコミットは除く"
+    # リビジョンのログを出力
+    hg log -r "reverse(ancestors('BRANCH_NAME')) and not merge()"
+
+親リビジョン
+--------------------
+古い順から、リビジョン A、B、C の順で履歴が記録されている場合、 A は B、B は C の親リビジョンとなります。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      A [ ]
+      B [ ]
+      C [ ]
+      A -> B
+      B -> C
+    }
+
+作業領域の内容が、リビジョン C の状態になっているとします。 この時、「リビジョン C は作業領域の親リビジョンである」と言えます。
+
+このような表現をするのは、この状態で作業領域で作業 (ファイルの改変／追加等) を行い、 作業結果を記録 (＝ コミット) した場合、 新規に作成されるリビジョンの親は C になるからです。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      A [ ]
+      B [ ]
+      C [ ]
+      D [ style = "filled" fillcolor = "red" ]
+      A -> B -> C -> D
+    }
+
+作業領域を「次に作成される仮想的なリビジョンの格納場所」と考えれば、 より理解できるのではないでしょうか。
+
+ヘッド
+--------------------
+
+ヘッドとは
+^^^^^^^^^^^^^^^^^^^^
+コミットを積み重ねることで、
+リビジョン記録のグラフ (＝ 履歴) が作成されます。
+
+リビジョングラフの中で、
+子リビジョンを持たないリビジョンの事を
+「ヘッド」 (HEAD) と呼びます。
+次のグラフではリビジョン2がヘッドです。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ style = "filled" fillcolor = "red" ]
+      0 -> 1
+      1 -> 2
+    }
+
+マルチプルヘッドとは
+^^^^^^^^^^^^^^^^^^^^
+ヘッド「でない」リビジョンを親にして、
+新たなリビジョンを生成することを、
+Mercurial では(広義の)「ブランチ」 (branch: 枝分かれ) と呼びます。
+原文では "topological branch" などと呼ばれています。
+
+以下の履歴ツリーで言えば、
+リビジョン 2 の後で生成されたリビジョン 3 はブランチになります。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ ]
+      3 [ style = "filled" fillcolor = "red" ]
+      0 -> 1
+      1 -> 2
+      1 -> 3
+    }
+
+ヘッドを親にして新たなリビジョンを作成した場合は、ブランチになりません。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ ]
+      3 [ style = "filled" fillcolor = "red" ]
+      0 -> 1
+      1 -> 2
+      2 -> 3
+    }
+
+ブランチによってヘッドが複数ある状態を、
+「マルチプルヘッド」 (multiple heads) と呼びます。
+
+複数人での協調作用で発生するマルチプルヘッド
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+先ほどのマルチプルヘッドの例では無理矢理マルチプルヘッドを作成していました。
+これは一人で作業している場合はマルチプルヘッドが作成されにくい為です。
+
+マルチプルヘッドは複数人で開発する場合に発生する問題でも有ります。
+
+例として、次のリポジトリを2人(Alice, Bob)で作業した場合を考えます。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+
+      subgraph cluster_central {
+        label = "Central Repository";
+	c_0
+        c_1
+      }
+
+      c_0 -> c_1
+    }
+
+まず作業するためにAliceとBobがリポジトリを複製(hg clone)します。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+
+      a_0 [ label = "0" ]
+      a_1 [ label = "1" peripheries = 2 ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" peripheries = 2 ]
+
+      subgraph cluster_central {
+        label = "Central Repository";
+	c_0
+        c_1
+      }
+
+      subgraph cluster_alice {
+        label = "Alice's Repository";
+	a_0
+        a_1
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+      }
+
+      c_0 -> c_1
+      a_0 -> a_1
+      b_0 -> b_1
+    }
+
+Aliceが先に編集してコミットしました。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+
+      a_0 [ label = "0" ]
+      a_1 [ label = "1" ]
+      a_2 [ label = "A" peripheries = 2 style = "filled" fillcolor = "yellow" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" peripheries = 2 ]
+
+      subgraph cluster_central {
+        label = "Central Repository";
+	c_0
+        c_1
+      }
+
+      subgraph cluster_alice {
+        label = "Alice's Repository";
+	a_0
+        a_1
+        a_2
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+      }
+
+      c_0 -> c_1
+      a_0 -> a_1 -> a_2
+      b_0 -> b_1
+    }
+
+Bobも編集を加えてコミットしました。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+
+      a_0 [ label = "0" ]
+      a_1 [ label = "1" ]
+      a_2 [ label = "A" peripheries = 2 style = "filled" fillcolor = "yellow" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "B" peripheries = 2 style = "filled" fillcolor = "green" ]
+
+      subgraph cluster_central {
+        label = "Central Repository";
+	c_0
+        c_1
+      }
+
+      subgraph cluster_alice {
+        label = "Alice's Repository";
+	a_0
+        a_1
+        a_2
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+        b_2
+      }
+
+      c_0 -> c_1
+      a_0 -> a_1 -> a_2
+      b_0 -> b_1 -> b_2
+    }
+
+Aliceは作業が完了したのでみんなに見てもらうように中央リポジトリに変更を反映します。(hg push)
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+      c_2 [ label = "A" style = "filled" fillcolor = "yellow" ]
+
+      a_0 [ label = "0" ]
+      a_1 [ label = "1" ]
+      a_2 [ label = "A" peripheries = 2 style = "filled" fillcolor = "yellow" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "B" peripheries = 2 style = "filled" fillcolor = "green" ]
+
+      subgraph cluster_central {
+        label = "Central Repository";
+	c_0
+        c_1
+        c_2
+      }
+
+      subgraph cluster_alice {
+        label = "Alice's Repository";
+	a_0
+        a_1
+        a_2
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+        b_2
+      }
+
+      c_0 -> c_1 -> c_2
+      a_0 -> a_1 -> a_2
+      b_0 -> b_1 -> b_2
+    }
+
+Bobも作業が完了したのでみんなに見てもらうように中央リポジトリに変更を反映します。(hg push)
+が、実はここで変更を反映する事が出来ません(演習で体験する事になると思います)。
+理由は、中央リポジトリにマルチプルヘッドが作成されてしまうからです。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+      c_2 [ label = "A" style = "filled" fillcolor = "yellow" ]
+      c_3 [ label = "B" style = "filled, dotted" fillcolor = "greenyellow" ]
+
+      a_0 [ label = "0" ]
+      a_1 [ label = "1" ]
+      a_2 [ label = "A" peripheries = 2 style = "filled" fillcolor = "yellow" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "B" peripheries = 2 style = "filled" fillcolor = "green" ]
+
+      subgraph cluster_central {
+        label = "Central Repository";
+	c_0
+        c_1
+        c_2
+        c_3
+      }
+
+      subgraph cluster_alice {
+        label = "Alice's Repository";
+	a_0
+        a_1
+        a_2
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+        b_2
+      }
+
+      c_0 -> c_1 -> c_2
+      c_1 -> c_3
+      a_0 -> a_1 -> a_2
+      b_0 -> b_1 -> b_2
+    }
+
+Bobは中央リポジトリに自分の変更を反映する事は出来ませんが、中央リポジトリの変更を取り込むことが出来ます。(hg pull)
+試して見ましょう。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+      c_2 [ label = "A" style = "filled" fillcolor = "yellow" ]
+
+      a_0 [ label = "0" ]
+      a_1 [ label = "1" ]
+      a_2 [ label = "A" peripheries = 2 style = "filled" fillcolor = "yellow" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "B" peripheries = 2 style = "filled" fillcolor = "green" ]
+      b_3 [ label = "A" style = "filled" fillcolor = "yellow" ]
+
+      subgraph cluster_central {
+        label = "Central Repository";
+	c_0
+        c_1
+        c_2
+      }
+
+      subgraph cluster_alice {
+        label = "Alice's Repository";
+	a_0
+        a_1
+        a_2
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+        b_2
+        b_3
+      }
+
+      c_0 -> c_1 -> c_2
+      a_0 -> a_1 -> a_2
+      b_0 -> b_1 -> b_2
+      b_1 -> b_3
+    }
+
+マルチプルヘッドが出来てしまいました。
+
+マージ
+------
+マルチプルヘッドの様に、二つの分離してしまった履歴を統合する作業をマージと呼びます。
+
+マージ手順例
+^^^^^^^^^^^^^^^^^^^^
+先ほどの新Bobリポジトリでマージ(hg merge)を行うと次の様になります。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "B" peripheries = 2 style = "filled" fillcolor = "green" ]
+      b_3 [ label = "A" peripheries = 2 style = "filled" fillcolor = "yellow" ]
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+        b_2
+        b_3
+      }
+
+      b_0 -> b_1 -> b_2
+      b_1 -> b_3
+    }
+
+「二重丸」が増えました、これは現在の作業領域がリビジョンBとリビジョンAの内容を含んでいるという事を表しています。
+この状態でコミットすると、マージ完了です。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "B" style = "filled" fillcolor = "green" ]
+      b_3 [ label = "A" style = "filled" fillcolor = "yellow" ]
+      b_4 [ label = "C" peripheries = 2 style = "filled" fillcolor = "cyan" ]
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+        b_2
+        b_3
+        b_4
+      }
+
+      b_0 -> b_1 -> b_2 -> b_4
+      b_1 -> b_3 -> b_4
+    }
+
+この状態で初めて中央リポジトリに変更を反映できます。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+      c_2 [ label = "A" style = "filled" fillcolor = "yellow" ]
+      c_3 [ label = "B" style = "filled" fillcolor = "green" ]
+      c_4 [ label = "C" style = "filled" fillcolor = "cyan" ]
+
+      a_0 [ label = "0" ]
+      a_1 [ label = "1" ]
+      a_2 [ label = "A" peripheries = 2 style = "filled" fillcolor = "yellow" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "B" style = "filled" fillcolor = "green" ]
+      b_3 [ label = "A" style = "filled" fillcolor = "yellow" ]
+      b_4 [ label = "C" peripheries = 2 style = "filled" fillcolor = "cyan" ]
+
+      subgraph cluster_central {
+        label = "Central Repository";
+	c_0
+        c_1
+        c_2
+        c_3
+        c_4
+      }
+
+      subgraph cluster_alice {
+        label = "Alice's Repository";
+	a_0
+        a_1
+        a_2
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository";
+	b_0
+        b_1
+        b_2
+        b_3
+        b_4
+      }
+
+      c_0 -> c_1 -> c_2 -> c_4
+      c_1 -> c_3 -> c_4
+      a_0 -> a_1 -> a_2
+      b_0 -> b_1 -> b_2 -> b_4
+      b_1 -> b_3 -> b_4
+    }
+
+コミット済み成果ベースのマージ
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mercurialは自動的に複数人の作業のマージを行わないので、Subversionから比べると一見不便に見えます。
+
+しかしこれはとても安全な方法なのです。
+
+Bobの操作をSubversionで行った場合を考えます。
+
+まずBobがコミットする前の状態です。この時点で次コミットされる変更はリビジョンBです。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+      c_2 [ label = "A" style = "filled" fillcolor = "yellow" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" peripheries = 2 ]
+      b_2 [ label = "B" style = "filled, dotted" fillcolor = "greenyellow" ]
+
+      subgraph cluster_central {
+        label = "Central Repository\n(Subversion)";
+	c_0
+        c_1
+        c_2
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository\n(Subversion)";
+	b_0
+        b_1
+        b_2
+      }
+
+      c_0 -> c_1 -> c_2
+      b_0 -> b_1 -> b_2
+    }
+
+Subversionでは通常コミットする前にsvn updateで中央リポジトリの変更を取り込みます。
+ここでもsvn updateで変更を取り込んで見ましょう。そうすると
+Bobの作業領域がリビジョンAに更新され、これからコミットする変更はリビジョンCへと変化します。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+      c_2 [ label = "A" style = "filled" fillcolor = "yellow" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "A" peripheries = 2 style = "filled" fillcolor = "yellow" ]
+      b_3 [ label = "C" style = "filled, dotted" fillcolor = "cyan" ]
+
+      subgraph cluster_central {
+        label = "Central Repository\n(Subversion)";
+	c_0
+        c_1
+        c_2
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository\n(Subversion)";
+	b_0
+        b_1
+        b_2
+        b_3
+      }
+
+      c_0 -> c_1 -> c_2
+      b_0 -> b_1 -> b_2 -> b_3
+    }
+
+これは「SubversionがリビジョンAの変更とリビジョンB(としてコミットされる予定)の変更をマージしたため」です。
+このようにSubversionはsvn update時に暗黙のうちにマージが行われています。
+
+最後に「Subversionが自動的にマージした変更」に問題が無いことを確認しリビジョンCをコミットします。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      c_0 [ label = "0" ]
+      c_1 [ label = "1" ]
+      c_2 [ label = "A" style = "filled" fillcolor = "yellow" ]
+      c_3 [ label = "C" style = "filled" fillcolor = "cyan" ]
+
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "A" style = "filled" fillcolor = "yellow" ]
+      b_3 [ label = "C" peripheries = 2 style = "filled" fillcolor = "cyan" ]
+
+      subgraph cluster_central {
+        label = "Central Repository\n(Subversion)";
+	c_0
+        c_1
+        c_2
+        c_3
+      }
+
+      subgraph cluster_bob {
+        label = "Bob's Repository\n(Subversion)";
+	b_0
+        b_1
+        b_2
+        b_3
+      }
+
+      c_0 -> c_1 -> c_2 -> c_3
+      b_0 -> b_1 -> b_2 -> b_3
+    }
+
+
+これは次の点で不便です。
+
+  - コンフリクト(変更内容の衝突)が発生した場合、作業領域に自分の編集と相手の編集(コンフリクトマーカーを含む)が混ざってしまう
+  - 更新時にコンフリクトが発生するという不安が常に付きまとう
+
+Mercurialの場合を再度確認してみましょう。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="BT"
+      b_0 [ label = "0" ]
+      b_1 [ label = "1" ]
+      b_2 [ label = "B" style = "filled" fillcolor = "green" ]
+      b_3 [ label = "A" style = "filled" fillcolor = "yellow" ]
+      b_4 [ label = "C" peripheries = 2 style = "filled" fillcolor = "cyan" ]
+
+      subgraph cluster_bob {
+        label = "Bob's Repository\n(Mercurial)";
+	b_0
+        b_1
+        b_2
+        b_3
+        b_4
+      }
+
+      b_0 -> b_1 -> b_2 -> b_4
+      b_1 -> b_3 -> b_4
+    }
+
+Mercurialではマルチプルヘッドをマージしています。この方法を「コミット済み成果ベースのマージ」と呼びます。
+
+「コミット済み成果ベースのマージ」にはSubversionの方法と比べ次の利点があります。
+
+  - マージ対象はコミット済みのため、マージ時のコンフリクトの解決を何度でもやり直せる
+  - コミットしても変更を取り込んでもマルチプルヘッドができるだけでコンフリクトが発生しないため、心の平穏が保てる
+
+これらのことからMercurialのマージはとても安全な方法といえます。
+
+(名前付き)ブランチ
+------------------
+
+名前付きブランチとは
+^^^^^^^^^^^^^^^^^^^^
+Mercurial では、
+履歴ツリーにおける枝分かれ元と枝分かれ先を識別するために、
+枝分かれ先に名前を付けることができます。
+このように名前をつけられたブランチを「名前付きブランチ」
+(named branch) と呼びます。
+
+以下の履歴グラフでは、
+リビジョン 3 が "RELEASE" という名前付きブランチに属します。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ ]
+      3 [ style = "filled" fillcolor = "red" ]
+      subgraph cluster_X {
+        style = "invis"; /* invisible frame */
+        0
+        1
+        2
+      }
+      subgraph cluster_Y {
+        label = "named branch \"RELEASE\"";
+        labelloc = "b" /* bottom */
+        3
+      }
+      0 -> 1
+      1 -> 2
+      1 -> 3
+    }
+
+CVS や Subversion 等の多くの SCM ツールで言うところの「ブランチ」は、
+Mercurial での「名前付きブランチ」とほぼ等価と考えてよいでしょう
+(厳密には色々違いますが....)。
+
+その一方で、
+これまでの説明で使用してきた、
+名前付き「ではない」ブランチは
+「名前無しブランチ」 (anonymous branch) と呼ばれます。
+
+名前付きブランチに属するリビジョンを親に持つリビジョンは、
+以下のいずれにも当てはまらない場合、親と同じ名前付きブランチに属します。
+
+  - 新たな名前付きブランチとしてブランチ
+  - 別な名前付きブランチへとマージ(後述)
+
+"default" は、明示的に名前付きブランチが作られていない状態で、
+生成されたリビジョンに対して割り当てられる、特別なブランチ名です。
+
+Mercurial では、
+全てのリビジョンは必ず何らかの名前付きブランチに属しますが、
+特別に "default" に属しているリビジョンに関しては、
+(便宜上)「名前付きブランチには属さないもの」とみなしている、
+と考えてください。
+
+なお、「名前付きブランチ」は、
+必ずしも「ブランチ」状態を伴わない場合もあります。
+例えば、先述した「マルチプルヘッド」での
+「ヘッドを親にして新たなリビジョンを作成」する場合に、
+新規リビジョンから先を「名前付きブランチ」として扱うこともできますが、
+この場合、いわゆる「ブランチ」状態は発生しません。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ ]
+      3 [ style = "filled" fillcolor = "red" ]
+      4 [ style = "invis" ]
+      subgraph cluster_X {
+        style = "invis"; /* invisible frame */
+        0
+        1
+        2
+        4
+      }
+      subgraph cluster_Y {
+        label = "named branch \"RELEASE\"";
+        labelloc = "b" /* bottom */
+        3
+      }
+      0 -> 1
+      1 -> 2
+      2 -> 4 [ style = "invis" ]
+      2 -> 3
+    }
+
+これは、一般的な運用であれば、ブランチ元の親リビジョンに対して、
+将来的に新たな子リビジョンが生成されることが想定できますので、
+長期的なスパンで見た場合には「ブランチしている」と言えるでしょう。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ ]
+      3 [ ]
+      4 [ style = "dotted" ]
+      subgraph cluster_X {
+        style = "invis"; /* invisible frame */
+        0
+        1
+        2
+        4
+      }
+      subgraph cluster_Y {
+        label = "named branch \"RELEASE\"";
+        labelloc = "b" /* bottom */
+        3
+      }
+      0 -> 1
+      1 -> 2
+      2 -> 4
+      2 -> 3
+    }
+
+名前付きブランチのマージ
+^^^^^^^^^^^^^^^^^^^^^^^^
+Mercurial のマージでは、マージ対象となる２つのリビジョンが、
+異なる名前付きブランチに属している場合、
+どちらをマージ元／先にするかが重要となります。
+
+2つの名前付きブランチ B_one と B_two を想定します。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ ]
+      3 [ ]
+      4 [ ]
+      subgraph cluster_X {
+        label = "named branch \"B_one\"";
+        labelloc = "b" /* bottom */
+        0
+        1
+        2
+        4
+      }
+      subgraph cluster_Y {
+        label = "named branch \"B_two\"";
+        labelloc = "b" /* bottom */
+        3
+      }
+      0 -> 1
+      1 -> 2
+      2 -> 4
+      2 -> 3
+    }
+
+作業領域の親リビジョン (＝ マージ先) が B_one、
+マージ対象 (＝ マージ元) が B_two の場合、
+マージによって生成されるリビジョンは B_one ブランチに属します。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ ]
+      3 [ ]
+      4 [ style = "filled" fillcolor = "red" ]
+      5 [ ]
+      subgraph cluster_X {
+        label = "named branch \"B_one\"";
+        labelloc = "b" /* bottom */
+        0
+        1
+        2
+        4
+        5
+      }
+      subgraph cluster_Y {
+        label = "named branch \"B_two\"";
+        labelloc = "b" /* bottom */
+        3
+      }
+      0 -> 1
+      1 -> 2
+      2 -> 4
+      2 -> 3
+      4 -> 5
+      3 -> 5
+    }
+
+この逆に、
+作業領域の親リビジョンが B_two、マージ対象が B_one の場合、
+マージによって生成されるリビジョンは B_two ブランチに属します。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      0 [ ]
+      1 [ ]
+      2 [ ]
+      3 [ style = "filled" fillcolor = "red" ]
+      4 [ ]
+      5 [ ]
+      subgraph cluster_X {
+        label = "named branch \"B_one\"";
+        labelloc = "b" /* bottom */
+        0
+        1
+        2
+        4
+      }
+      subgraph cluster_Y {
+        label = "named branch \"B_two\"";
+        labelloc = "b" /* bottom */
+        3
+        5
+      }
+      0 -> 1
+      1 -> 2
+      2 -> 4
+      2 -> 3
+      4 -> 5
+      3 -> 5
+    }
+
+  .. warning::
+
+    MercurialのブランチとGitのブランチ、MercurialのブランチとBazaarのブランチ、MercurialのブランチとSubversionのブランチは指し示すものも実装も全く異なります。
+
+    ブランチの話をする場合はバージョン管理システム一般の話なのか、特定のバージョン管理システムの話なのかを意識しましょう。
+
+名前付きブランチをなぜ使うのか
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+名前付きブランチは主に次の様な用途で利用します。（もちろんこれ以外の利用用途もたくさんあります。）
+
+  - 新規機能開発の変更と、メンテナンスの為の変更を区別する為に利用する
+  - 一連のリビジョンの関連付けを行うために利用する
+
+「新規機能開発の変更と、メンテナンスの為の変更を区別する為に利用する」場合は、
+開発ブランチ、リリースブランチ、メンテナンスブランチなど、息の長いブランチとして利用します。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      s_0 [ ]
+      s_1 [ ]
+      d_1 [ ]
+      d_2 [ ]
+      d_3 [ ]
+      d_4 [ ]
+
+      subgraph cluster_stable {
+        label = "stable";
+        labelloc = "b" /* bottom */
+        i_0 [ style = invis ]
+        i_1 [ style = invis ]
+        i_2 [ style = invis ]
+        s_0 -> i_0 [ dir = none ]
+        i_0 -> i_1 [ dir = none ]
+        i_1 -> i_2 [ dir = none ]
+        i_2 -> s_1
+      }
+
+      subgraph cluster_develop {
+        label = "develop";
+        labelloc = "b" /* bottom */
+        d_1 -> d_2 -> d_3 -> d_4
+      }
+
+      /* 0 -> 1 [ dir = back ] */
+      s_0 -> d_1
+      d_3 -> s_1
+    }
+
+「一連のリビジョンの関連付けを行うために利用する」場合は、息の長いブランチの中で利用される場合が多いです。
+
+次の例では、リビジョンd_2、リビジョンd_3、リビジョンd_4を別ブランチにしています。
+
+  .. graphviz::
+
+    digraph {
+      rankdir="LR"
+      s_0 [ ]
+      s_1 [ ]
+      d_1 [ ]
+      d_3 [ label = "d_3'" ]
+      d_4 [ label = "d_4'" ]
+      b_1 [ ]
+
+      subgraph cluster_stable {
+        label = "stable";
+        labelloc = "b" /* bottom */
+        i_0 [ style = invis ]
+        i_1 [ style = invis ]
+        i_2 [ style = invis ]
+        i_3 [ style = invis ]
+        s_0 -> i_0 [ dir = none ]
+        i_0 -> i_1 [ dir = none ]
+        i_1 -> i_2 [ dir = none ]
+        i_2 -> i_3 [ dir = none ]
+        i_3 -> s_1
+      }
+
+      subgraph cluster_develop {
+        label = "develop";
+        labelloc = "b" /* bottom */
+        d_i_f0 [ style = invis ]
+        d_i_f1 [ style = invis ]
+        d_i_1 [ style = invis ]
+        d_1 -> d_i_f0 [ dir = none ]
+        d_i_f0 -> d_i_f1 [ dir = none ]
+        d_i_f1 -> d_3 [ dir = none ]
+        d_3 -> d_i_1 [ dir = none ]
+        d_i_1 -> d_4
+      }
+
+      subgraph cluster_feature {
+        label = "develop/issue/F";
+        labelloc = "b" /* bottom */
+        f_1 -> f_2
+      }
+
+      subgraph cluster_bugfix {
+        label = "develop/issue/B";
+        labelloc = "b" /* bottom */
+        b_1
+      }
+
+      /* 0 -> 1 [ dir = back ] */
+      s_0 -> d_1
+      d_3 -> s_1
+      d_1 -> f_1
+      f_2 -> d_3
+      d_3 -> b_1
+      b_1 -> d_4
+    }
+
+リビジョンのブランチ名を適切に設定する(イシュートラッカーの番号などを含める)事によって、一つ一つの変更由来が明確になるという利点があります。
+
+  .. note::
+
+    リポジトリを分割する事によって「新規機能開発の変更と、メンテナンスの為の変更を区別する」こともあります。
+
+    代表的な例はMercurialのリポジトリです。次のように開発版リポジトリと安定板リポジトリが分割されています。
+
+      - http://selenic.com/repo/hg/
+      - http://selenic.com/repo/hg-stable/
+
+    （とはいえ、最近は名前付きブランチと組み合わせて運用されているようです。詳しくは `Mercurial Wiki StandardBranching`_ を参照してください）
+
+    .. _`Mercurial Wiki StandardBranching`: http://mercurial.selenic.com/wiki/StandardBranching
+
+  .. note::
+
+    この資料で紹介していないブランチ運用のパターンについては `A Guide to Branching in Mercurial`_ を参照してください。
+
+    .. _`A Guide to Branching in Mercurial`: http://stevelosh.com/blog/2009/08/a-guide-to-branching-in-mercurial/
+
+お作法
+------
+
+コミットの粒度
+^^^^^^^^^^^^^^
+分散バージョン管理システムをより効果的に使いこなすためのお作法として、一度のコミットに含める変更の粒度があります。
+
+Subversionではコミットすると全員の開発者に影響するため、次のような運用を行っていることが多いと思います。
+
+  - コンパイルエラーやほかの開発者への影響が出ない程度に空気を読んでコミットする
+  - 新しい機能を作成する場合は全部できてからコミットする
+  - 1チケットの修正は1コミットにする
+  - あとで戻したい単位でコミットする
+  - 一度に一つの変更をコミットする
+
+Mercurialに限らず分散バージョン管理システムのコミットは自分の作業領域のリポジトリにのみ反映されるので、1コミットに詰め込む必要はありません。
+次の粒度でコミットし、任意のタイミングで中央リポジトリに反映させましょう。
+
+  - あとで戻したい単位でコミットする
+  - 一度に一つの変更をコミットする
+
+最初は「あとで戻したい単位でコミットする」を意識するとよいと思います。慣れてきたところで「一度に一つの変更をコミットする」に移行しましょう。
+
+「一度に一つの変更をコミットする」ためは具体的には次のようなことを意識しましょう。
+
+  - 機能追加とバグフィックスを同時に行わない
+  - 機能追加と直接関係ないインデント修正は行わない
+  - 機能追加とリファクタリングを同時に行わない
+  - 大きな機能追加を一度のコミットで行わない
+
+    - (「あとで戻したい単位でコミットする」と相反します)
+
+前向きに考えると次になります。
+
+  - 機能追加だけのコミットをしましょう
+  - バグフィックスだけのコミットをしましょう
+  - インデント修正だけのコミットをしましょう
+  - リファクタリングだけのコミットをしましょう
+  - 大きい機能追加の場合はいくつかのステップに分割してコミットしましょう
+
+    - (「あとで戻したい単位でコミットする」と相反します)
+
+
+また、このドキュメントのコミットの粒度も参考にしてください。
+
+コミットコメント
+^^^^^^^^^^^^^^^^
+MercurialのWikiにそのものずばりの `優れたチェンジセットコメントの書き方`_ という記事が存在します。
+
+具体的には次の点を気を付けてコメントを書きましょう。(Gitのお作法と同じです)
+
+  - 1行目に変更内容を簡潔に記述する
+  - 2行目は空行
+  - 3行目以降に変更内容の詳細を記述する
+
+このお作法をベースにプロジェクト毎に追加ルールを設定すると効果的です。
+
+  - 1行目の先頭にチケット番号をいれる
+  - マージコミットのコメントの書式を固定化する
+
+    - ブランチのマージは「merge with BRANCH_NAME」にする
+    - マルチプルヘッドのマージは単に「merge」にする
+
+英語のドキュメントですが、 `Mercurialのコメントの作法`_ も存在します。
+
+このドキュメントのコミットコメントは「1行目に変更内容を簡潔に記述する」しか守っていないのであまり参考にならないと思います。。。
+
+.. _`優れたチェンジセットコメントの書き方`: http://mercurial.selenic.com/wiki/JapaneseChangeSetComments
+.. _`Mercurialのコメントの作法`: http://mercurial.selenic.com/wiki/ContributingChanges#Patch_descriptions
+
+作業フロー
+----------
+
+作業領域の準備
+^^^^^^^^^^^^^^
+まず最初に、Mercurialで利用するユーザ名を教える必要があります。$HOME/.hgrcを編集してユーザ名を設定しましょう。
+
+  ::
+
+    $ cat $HOME/.hgrc
+    [ui]
+    username = Your Name <your.name@example.com>
+
+中央リポジトリを複製(hg clone)するところからMercurialの作業は始まります。
+
+  ::
+
+    # 中央リポジトリを複製して自分用の作業領域を作成する
+    $ hg clone http://url/to/remote/repository WORKING_SPACE
+    $ cd WORKING_SPACE
+
+複製した時点で、作業領域はdefaultブランチの最新のリビジョンとなっています。必要が有ればhg update作業するブランチに移動します。
+
+  ::
+
+    # defaultで作業しない場合は移動する
+    $ hg update WORKING_BRANCH
+
+中央リポジトリを利用しないでリポジトリを新規作成する場合はhg initを利用します。
+
+  ::
+
+    # リポジトリを新規作成
+    $ hg init WORKING_SPACE
+    $ cd WORKING_SPACE
+
+編集とコミット
+^^^^^^^^^^^^^^
+作業領域のファイルを編集したり、ファイルを追加したりいろいろ作業しましょう。
+
+  ::
+
+    $ (なにかファイルを編集)
+    $ (なにかファイルを追加)
+    # 追加したファイルをmercuiralで管理する
+    $ hg add FILE_NAME
+
+コミットする前に現在のリポジトリの状況を確認しましょう。
+
+  ::
+
+    # ファイルの状態を確認
+    $ hg status
+    # 差分表示
+    $ hg diff
+
+編集内容の確認が出来たらコミットします。
+
+  ::
+
+    $ hg commit
+    (コミットメッセージを入力します)
+
+  .. note::
+
+    チケット駆動開発などを行っている場合は作業する前に作業ブランチを切ります。
+
+    具体的には次の様な作業を行います。
+
+    ::
+
+      $ hg branch
+      develop
+      $ hg branch issueXXX
+      $ hg commit -m "start issueXXX branch"
+      $ (何か作業)
+      $ hg commit
+      (コミットメッセージを入力します)
+      $ hg up develop
+      $ hg merge issueXXX
+      $ hg commit -m "merge with issueXXX"
+
+変更の取り込みと変更の反映
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+自分の作業が完了したら、変更を反映させます。
+
+お作法としては変更を反映させる前に、まず複製元リポジトリ(通常は中央リポジトリ)の変更を取り込みます。
+
+  ::
+
+    # まず変更を取り込みましょう
+    $ hg pull
+
+変更を取り込むとマルチプルヘッドが出来たり出来なかったりします。マルチプルヘッドが出来た場合は変更を反映させることが出来ません。
+
+  ::
+
+    # マルチプルヘッドが出来た場合は変更を反映させることが出来ません
+    $ hg push
+    pushing to http://url/to/remote/repository
+    searching for changes
+    abort: push creates new remote heads on branch 'default'!
+    (did you forget to merge? use push -f to force)
+
+メッセージにあるとおりhg push -fを利用すれば無理矢理変更を反映出来ますが、たぶんあなたは開発チームから白い目で見られると思います。
+
+マージしましょう。
+
+  ::
+
+    # マージしよう
+    $ hg merge
+    1 files updated, 0 files merged, 0 files removed, 0 files unresolved
+    (branch merge, don't forget to commit)
+    # マージをコミット
+    $ hg commit -m "merge"
+
+さて、ここまで出来たら改めて反映させます。
+
+  ::
+
+    # 変更を反映
+    $ hg push
+    1 files updated, 0 files merged, 0 files removed, 0 files unresolved
+    (branch merge, don't forget to commit)
+    # マージをコミット
+    $ hg commit -m "merge"
+
+  .. note::
+
+    中央リポジトリへの hg push -f を禁止したい場合は `Mercurial でセントラルリポジトリのマルチプルヘッドを禁止する`_ を参考にしてください。
+
+    .. _`Mercurial でセントラルリポジトリのマルチプルヘッドを禁止する`: http://labs.timedia.co.jp/2011/09/reject-multiple-head.html
+
+おまけ
+------
+
+.. Mercurialの内部オブジェクトについて
+.. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. Mercurialはプラグイン機構を持っているので、プラグイン作成の為のインターフェースが整っています。
+.. 
+..   - changectx
+..   - filectx
+.. 
+.. 内部の保存形式
+.. 
+..   - revlog
+..   - changelog
+..   - manifest
+..   - filelog
+.. 
+..   ::
+.. 
+..     localrepositoryを渡してchangectxになる。
+..     cahngectxはlocalrepositoryのchangelogのラッパークラス。
+..     主な情報はchangectx経由でchangelogから取得する
+..     リビジョンの変更ファイルはflectxから取得
+..     チェンジセット=オブジェクトって話とか。
+..     タグはチェンジセットとは別に保存されるとか。
+..     ブックマークなどは変更管理されないとか。
+.. 
+.. ぼくのかんがえたさいきょうのまーきゅりあるうんようほうほう
+.. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. TODO webサービスみたいな本番が一つのやつの場合の話です
+
+.. Subversionから移行するにあたってのTips
+.. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. TODO 実際にはまった点を書く
+
+.. MercurialからSubversionを利用する
+.. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. TODO 余力があったら書く
+
+おすすめhgrc
+^^^^^^^^^^^^
+初心者の方がすぐに利用できるhgrcを用意しました。
+
+  ::
+
+    [ui]
+    # Mercurialが利用するユーザ名を設定してください。
+    #username = Your Name <your.name@example.com>
+    
+    [extensions]
+    bookmarks =
+    color =
+    graphlog =
+    mq =
+    pager =
+    progress =
+    rebase =
+    record =
+    transplant =
+    
+    [alias]
+    _status = status
+    st = ! $HG _status $($HG root) $HG_ARGS
+    
+    # branch
+    b = branch
+    #bs = branches -a
+    
+    # resolve
+    mark = resolve -m
+    unmark = resolve -u
+    conflicts = resolve -l
+    uselocal = resolve --tool internal:local
+    useother = resolve --tool internal:other
+    
+    # push
+    nudge = push --rev .
+    #push = ! echo -e "\033[31m(use 'hg nudge' to push changesets)\033[m"
+    
+    [pager]
+    attend = annotate, cat, diff, export, glog, log, qdiff, help
+    
+    [diff]
+    git = True
+
+このhgrcは次の点を考慮しています。
+
+  - 普段の操作が便利になる拡張を有効にする
+  - nudgeやstなど便利な別名を追加する
+  - 詳しい人に助けを求める際に詳しい人が作業しやすいよう、歴史改変系の拡張を有効にする
+
+この設定を足掛かりに自分にあったhgrcを模索していきましょう。
+
+リポジトリの構成
+^^^^^^^^^^^^^^^^
+Mercurialのリポジトリは次の様な構成を取っています。
+.hgディレクトリの直下は、Mercurial拡張が利用するデータ保存場所としても利用されています。
+.hg/storeディレクトリが実際にリビジョンを格納しているディレクトリです。
+
+主な物の解説を行います。
+
+  ::
+
+    / リポジトリルート(兼 作業領域となるディレクトリ)
+    |
+    |-- .hg/ メタデータ格納ディレクトリ
+    | |
+    | |-- store/ リビジョンの格納されているディレクトリ
+    | |          壊したらやばい
+    | |
+    | |-- requires リポジトリフォーマットが書かれたファイル
+    | |            破壊されるとstore以下が読み取れなくなる
+    | |
+    | |-- hgrc リポジトリ固有のMercurialの設定ファイル
+    | |        主にクローン元URL、ユーザ名、認証情報、フック、などを設定する
+    | |        hg init で初期化した場合は作成されない為、手で作成する
+    | |        よく編集するファイル
+    | |
+    | |-- branch 次コミットする時のリビジョンのブランチ名の入ったファイル
+    | |          通常は現在のブランチ名。hg brach BRANCH_NAME を行うとBRANCH_NAMEが設定される
+    | |
+    | |-- 00changelog.i     下位互換の為のダミーファイル
+    | |
+    | |-- patches/ MQ(Mercurial Queue)拡張用ディレクトリ
+    | | |          series、statusという管理ファイル以外に、パッチファイルが保存される
+    | | |
+    | | |-- series MQのパッチファイルの適応順番が記録されているファイル
+    | | |-- status MQのパッチファイルの適応状態が記録されているファイル
+    | |
+    | |-- strip-backup/ MQ拡張で追加されるstripコマンド用ディレクトリ
+    | |                 stripで削除したリビジョンのバックアップファイル置き場
+    | |
+    | |-- shelve/ Shelve拡張用ディレクトリ
+    | |-- translpant/ Transplant拡張用ディレクトリ
+    | |
+    | |-- .... 他にもいろいろあるけど、用途を理解するまでは基本的に触らない方がいい
+    |
+    |-- .hgignore Mercurialで管理しないファイルのルールを記述する。作成は任意
+    |-- .hgtags   hg tag で付けたタグの情報を保存する。初回のhg tag実行時に作成される。作成は任意
+    |             (注) .hgignoreと.hgtagsは作業領域の中に作成するファイルですが特別な意味を持ちます。
+    |
+    |-- 作業領域
+    
+    図 リポジトリの構成
+
+参考文献
+--------
+- `Mercurial Wiki`_
+- `「入門Mercurial Linux/Windows対応」`_ （藤原克則 著/ 秀和システム 刊）
+- `「Mercurial\: The Definitive Guide」日本語版`_
+
+.. _`Mercurial Wiki`: http://mercurial.selenic.com/wiki/
+.. _`「入門Mercurial Linux/Windows対応」`: http://www.lares.dti.ne.jp/~foozy/fujiguruma/scm/mercurial-books.html#fujiwarabook
+.. _`「Mercurial\: The Definitive Guide」日本語版` : http://foozy.bitbucket.org/hgbook-ja/index.ja.html
